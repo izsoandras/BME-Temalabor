@@ -1,0 +1,69 @@
+<html>
+
+<head>
+    <script src="Chart.js.gz"></script>
+    <style>
+        .dataChart{
+            height: 80vh;
+            width: 100vw;
+        }
+    </style>
+</head>
+
+<body onload="onStart()">
+    <canvas id="dataChart"></canvas>
+</body>
+<script>
+    var ctx = document.getElementById("dataChart");
+    var data1 = new Array();
+    var data2 = new Array();
+    var data3 = new Array();
+
+    var myChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            datasets: [{
+                label: "Humidity",
+                data: data1,
+                borderColor: "rgba(255,0,0,1)"
+            }, {
+                label: "Temperature",
+                data: data2,
+                borderColor: "rgba(0,255,0,1)"
+            }, {
+                label: "Pressure",
+                data: data3,
+                borderColor: "rgba(0,0,255,1)"
+            }]
+        }
+    });
+
+    var websock;
+    function onStart() {
+        websock = new WebSocket('ws://' + window.location.hostname + ':82/');
+        websock.onopen = function (evt) { console.log('websock open'); };
+        websock.onclose = function (evt) { console.log('websock close'); };
+        websock.onerror = function (evt) { console.log(evt); };
+
+        websock.onmessage = function (evt) {
+            console.log(evt);
+            var data = evt.data.trim().split(",");
+            console.log(data);
+            data1.push(data[1]);
+            data2.push(data[2]);
+            data3.push(data[3]);
+
+            if(data.length > 4){
+                var date = new Date();
+                date = new Date(date.getTime() - (data[4] - data[0])*5000);
+                myChart.data.labels.push(date);
+            }else{
+                myChart.data.labels.push(new Date());
+            }
+
+            myChart.update();
+        };
+    }
+</script>
+
+</html>

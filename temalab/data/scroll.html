@@ -1,0 +1,149 @@
+<html>
+
+<head>
+    <script src="Chart.js"></script>
+    <style>
+        .chartWrapper {
+            position: relative;
+        }
+
+        .chartWrapper>canvas {
+            position: absolute;
+            left: 0;
+            top: 0;
+            pointer-events: none;
+        }
+
+        .chartAreaWrapper {
+            width: 430px;
+            overflow-x: scroll;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="chartWrapper">
+        <div class="chartAreaWrapper">
+            <div class="chartAreaWrapper2">
+                <canvas id="chart-Test" height="300" width="1200"></canvas>
+            </div>
+        </div>
+        <canvas id="axis-Test" height="300" width="0"></canvas>
+    </div>
+</body>
+<script src="jquery-3.3.1.min.js"></script>
+<script>
+    $(document).ready(function () {
+
+        function generateLabels() {
+            var chartLabels = [];
+            for (x = 0; x < 100; x++) {
+                chartLabels.push("Label" + x);
+            }
+            return chartLabels;
+        }
+
+        function generateData() {
+            var chartData = [];
+            for (x = 0; x < 100; x++) {
+                chartData.push(Math.floor((Math.random() * 100) + 1));
+            }
+            return chartData;
+        }
+
+        function addData(numData, chart) {
+            for (var i = 0; i < numData; i++) {
+                chart.data.datasets[0].data.push(Math.random() * 100);
+                chart.data.labels.push("Label" + i);
+                var newwidth = $('.chartAreaWrapper2').width() + 60;
+                $('.chartAreaWrapper2').width(newwidth);
+            }
+        }
+
+        var chartData = {
+            labels: generateLabels(),
+            datasets: [{
+                label: "Test Data Set",
+                data: generateData()
+            }]
+        };
+
+
+
+        $(function () {
+            var rectangleSet = false;
+
+            var canvasTest = $('#chart-Test');
+            var chartTest = new Chart(canvasTest, {
+                type: 'line',
+                data: chartData,
+                maintainAspectRatio: false,
+                responsive: true,
+                options: {
+                    tooltips: {
+                        titleFontSize: 0,
+                        titleMarginBottom: 0,
+                        bodyFontSize: 12
+                    },
+                    scales: {
+                        xAxes: [{
+                            ticks: {
+                                fontSize: 12,
+                                display: true
+                            }
+                        }],
+                        yAxes: [{
+                            ticks: {
+                                fontSize: 12,
+                                beginAtZero: true
+                            }
+                        }]
+                    },
+                    animation: {
+                        onComplete: handleAnimationComplete,
+                        onProgress: handleProgress
+                    }
+                }
+            });
+            addData(5, chartTest);
+        });
+    });
+
+    function handleAnimationComplete() {
+        if (!rectangleSet) {
+            var scale = window.devicePixelRatio;
+
+            var sourceCanvas = chartTest.chart.canvas;
+            var copyWidth = chartTest.scales['y-axis-0'].width - 10;
+            var copyHeight = chartTest.scales['y-axis-0'].height + chartTest.scales['y-axis-0'].top + 10;
+
+            var targetCtx = document.getElementById("axis-Test").getContext("2d");
+
+            targetCtx.scale(scale, scale);
+            targetCtx.canvas.width = copyWidth * scale;
+            targetCtx.canvas.height = copyHeight * scale;
+
+            targetCtx.canvas.style.width = `${copyWidth}px`;
+            targetCtx.canvas.style.height = '${copyHeight}px';
+            targetCtx.drawImage(sourceCanvas, 0, 0, copyWidth * scale, copyHeight * scale, 0, 0, copyWidth * scale, copyHeight * scale);
+
+            var sourceCtx = sourceCanvas.getContext('2d');
+
+            // Normalize coordinate system to use css pixels.
+
+            sourceCtx.clearRect(0, 0, copyWidth * scale, copyHeight * scale);
+            rectangleSet = true;
+        }
+    }
+    function handleProgress() {
+        if (rectangleSet === true) {
+            var copyWidth = chartTest.scales['y-axis-0'].width;
+            var copyHeight = chartTest.scales['y-axis-0'].height + chartTest.scales['y-axis-0'].top + 10;
+
+            var sourceCtx = chartTest.chart.canvas.getContext('2d');
+            sourceCtx.clearRect(0, 0, copyWidth, copyHeight);
+        }
+    }
+</script>
+
+</html>

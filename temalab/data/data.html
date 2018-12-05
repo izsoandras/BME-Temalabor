@@ -1,0 +1,242 @@
+<html>
+
+<head>
+    <script src="Chart.js.gz"></script>
+    <style>
+        .graphDiv {
+            height: 43vh;
+            width: 48vw;
+            display: inline-block;
+            padding-bottom: 5vh;
+        }
+
+    </style>
+</head>
+
+<body onload="onStart()">
+        <div class="graphDiv">
+            <canvas id="humidChart"></canvas>
+    </div>
+    <div class="graphDiv">
+        <canvas id="tempChart"></canvas>
+    </div>
+    <div class="graphDiv">
+        <canvas id="pressChart"></canvas>
+    </div>
+    <div class="graphDiv">
+        <canvas id="altitudeChart"></canvas>
+    </div>
+    <div class="graphDiv">
+        <canvas id="wifiChart"></canvas>
+    </div>
+</body>
+<script>
+    var humidChartId = document.getElementById("humidChart");
+    var tempChartId = document.getElementById("tempChart");
+    var pressChartId = document.getElementById("pressChart");
+    var altitudeChartId = document.getElementById("altitudeChart");
+    var wifiChartId = document.getElementById("wifiChart");
+
+    var labelsArray = new Array();
+    var humidData = new Array();
+    var tempData = new Array();
+    var pressData = new Array();
+    var altitudeData = new Array();
+
+    var humidChart = new Chart(humidChartId, {
+        type: 'line',
+        data: {
+            labels: labelsArray,
+            datasets: [{
+                label: "Humidity",
+                data: humidData,
+                borderColor: "rgba(0,0,255,1)"
+            }]
+        },
+        options: {
+            scales: {
+                yAxes: [{
+                    ticks: {
+                        min: 0,
+                        max: 100
+                    }
+                }]
+            }
+        }
+    });
+    var tempChart = new Chart(tempChartId, {
+        type: 'line',
+        data: {
+            labels: labelsArray,
+            datasets: [{
+                label: "Temperature",
+                data: tempData,
+                borderColor: "rgba(226,139,0,1)"
+            }]
+        },
+        options: {
+            scales: {
+                yAxes: [{
+                    ticks: {
+                        suggestedMin: 0
+                    }
+                }]
+            }
+        }
+    });
+    var pressChart = new Chart(pressChartId, {
+        type: 'line',
+        data: {
+            labels: labelsArray,
+            datasets: [{
+                label: "Pressure",
+                data: pressData,
+                borderColor: "rgba(40,233,255,1)"
+            }]
+        }
+
+    });
+    var altitudeChart = new Chart(altitudeChartId, {
+        type: 'line',
+        data: {
+            labels: labelsArray,
+            datasets: [{
+                label: "Altitude",
+                data: altitudeData,
+                borderColor: "rgba(0,0,0,1)"
+            }]
+        },
+        options: {
+            scales: {
+                yAxes: [{
+                    ticks: {
+                        suggestedMin: 96
+                    }
+                }]
+            }
+        }
+
+    });
+
+    var wifiChart = new Chart(wifiChartId, {
+        type: 'bar',
+        data: {
+            labels: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14"],
+            datasets: [{
+                label: "Network1",
+                data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 0, 0, 0],
+                borderColor: "rgba(0,255,0,1)",
+                backgroundColor: "rgba(0,255,0,1)"
+            },
+            {
+                label: "Network2",
+                data: [0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0],
+                borderColor: "rgba(0,0,255,1)",
+                backgroundColor: "rgba(0,0,255,1)"
+            }]
+        }
+    });
+
+    var rssi = new Chart(rssiId, {
+        type: 'line',
+        data: {
+            labels: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14"],
+            datasets: [{
+                label: "Network1",
+                data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 0, 0, 0],
+                borderColor: "rgba(0,255,0,1)",
+                backgroundColor: "rgba(0,255,0,1)"
+            },
+            {
+                label: "Network2",
+                data: [0, 0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0],
+                borderColor: "rgba(0,0,255,1)",
+                backgroundColor: "rgba(0,0,255,1)"
+            }]
+        }
+    });
+
+    var sensorSocket;
+    var wifiSocket;
+    function onStart() {
+        sensorSocket = new WebSocket('ws://' + window.location.hostname + ':82/');
+        sensorSocket.onopen = function (evt) { console.log('sensorSocket open'); };
+        sensorSocket.onclose = function (evt) { console.log('sensorSocket close'); };
+        sensorSocket.onerror = function (evt) { console.log(evt); };
+
+        sensorSocket.onmessage = function (evt) {
+            console.log(evt);
+            var data = evt.data.trim().split(",");
+            console.log(data);
+            humidData.push(data[1]);
+            tempData.push(data[2]);
+            pressData.push(data[3]);
+            altitudeData.push(data[4]);
+
+            var date = new Date();
+            if (data.length > 5) {
+                date = new Date(date.getTime() - (parseInt(data[5]) - parseInt(data[0])) * 30000);
+            }
+            var lab = "";
+            lab += date.getFullYear();
+            lab += ".";
+            lab += date.getMonth() + 1;
+            lab += ".";
+            lab += date.getDate();
+            lab += " ";
+            lab += date.getHours();
+            lab += ":";
+            lab += date.getMinutes();
+            lab += ":";
+            lab += date.getSeconds();
+
+
+            labelsArray.push(lab);
+            humidChart.update();
+            tempChart.update();
+            pressChart.update();
+            altitudeChart.update();
+        };
+
+        wifiSocket = new WebSocket('ws://' + window.location.hostname + ':82/');
+        wifiSocket.onopen = function (evt) { console.log('wifiSocket open'); };
+        wifiSocket.onclose = function (evt) { console.log('wifiSocket close'); };
+        wifiSocket.onerror = function (evt) { console.log(evt); };
+
+        wifiSocket.onmessage = function (evt) {
+            console.log(evt);
+            var data = evt.data.trim().split(",");
+            console.log(data);
+            humidData.push(data[1]);
+            tempData.push(data[2]);
+            pressData.push(data[3]);
+            altitudeData.push(data[4]);
+
+            var date = new Date();
+            if (data.length > 5) {
+                date = new Date(date.getTime() - (parseInt(data[5]) - parseInt(data[0])) * 30000);
+            }
+            var lab = "";
+            lab += date.getFullYear();
+            lab += ".";
+            lab += date.getMonth() + 1;
+            lab += ".";
+            lab += date.getDate();
+            lab += " ";
+            lab += date.getHours();
+            lab += ":";
+            lab += date.getMinutes();
+            lab += ":";
+            lab += date.getSeconds();
+
+
+            labelsArray.push(lab);
+            humidChart.update();
+            tempChart.update();
+            pressChart.update();
+            altitudeChart.update();
+        };
+    }
+</script>
+
+</html>

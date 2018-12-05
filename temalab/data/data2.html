@@ -1,0 +1,459 @@
+<html>
+
+<head>
+    <script src="Chart.js.gz"></script>
+    <style>
+        .chartWrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        .chartWrapper>canvas {
+            position: absolute;
+            left: 0;
+            top: 0;
+            pointer-events: none;
+        }
+
+        .chartAreaWrapper {
+            width: 48vw;
+            overflow-x: scroll;
+        }
+
+    </style>
+</head>
+
+<body>
+    <div class="chartWrapper">
+        <div class="chartAreaWrapper">
+            <div class="chartAreaWrapper2">
+                <canvas id="humidChart" height="600" width="1200"></canvas>
+            </div>
+        </div>
+        <canvas id="humidAxis" height="600" width="0"></canvas>
+    </div>
+    <div class="chartWrapper">
+        <div class="chartAreaWrapper">
+            <div class="chartAreaWrapper2" width = "1200">
+                <canvas id="tempChart" height="600" width="1200"></canvas>
+            </div>
+        </div>
+        <canvas id="tempAxis" height="600" width="0"></canvas>
+    </div>
+    <div class="chartWrapper">
+        <div class="chartAreaWrapper">
+            <div class="chartAreaWrapper2">
+                <canvas id="pressChart" height="600" width="1200"></canvas>
+            </div>
+        </div>
+        <canvas id="pressAxis" height="600" width="0"></canvas>
+    </div>
+    <div class="chartWrapper">
+        <div class="chartAreaWrapper">
+            <div class="chartAreaWrapper2">
+                <canvas id="altitudeChart" height="600" width="0"></canvas>
+            </div>
+        </div>
+        <canvas id="altitudeAxis" height="600" width="0"></canvas>
+    </div>
+</body>
+<script src="jquery-3.3.1.min.js.gz"></script>
+<script>
+    $(document).ready(function () {
+        var humidChart;
+        var pressChart;
+        var altitudeChart;
+        var wifiChart;
+
+        labelsArray = new Array();
+        function generateLabels() {
+            var chartLabels = [];
+            for (x = 0; x < 100; x++) {
+                chartLabels.push("Label" + x);
+            }
+            return chartLabels;
+        }
+        function generateData() {
+            var chartData = [];
+            for (x = 0; x < 100; x++) {
+                chartData.push(Math.floor((Math.random() * 100) + 1));
+            }
+            return chartData;
+        }
+        function adddata(numData, chart) {
+            for (var i = 0; i < numData; i++) {
+                chart.data.datasets[0].data.push(Math.random() * 100);
+                chart.data.labels.push("Label" + i);
+                var newwidth = $('.chartAreaWrapper2').width() + 60;
+                $('.chartAreaWrapper2').width(newwidth);
+                var newWidth = $('#humidChart').width() + 60;
+               // $('#humidChart').width(newwidth);
+            }
+        }
+        var chartData = {
+            labels: generateLabels(),
+            datasets: [{
+                label: "Test Data Set",
+                data: generateData()
+            }]
+        };
+
+        $(function () {
+            var humidRectangleSet = false;
+
+            var humidChartId = $('#humidChart');
+            humidChart = new Chart(humidChartId, {
+                type: 'line',
+                data: chartData/*{
+                    labels: labelsArray,
+                    datasets: [{
+                        label: "Humidity",
+                        borderColor: "rgba(0,0,255,1)"
+                    }]
+                }*/,
+                options: {
+                    tooltips: {
+                        titleFontSize: 0,
+                        titleMarginBottom: 0,
+                        bodyFontSize: 12
+                    },
+                    scales: {
+                        xAxes: [{
+                            ticks: {
+                                fontSize: 12,
+                                display: false
+                            }
+                        }],
+                        yAxes: [{
+                            ticks: {
+                                fontSize: 12,
+                                beginAtZero: true
+                            }
+                        }]
+                    },
+                    animation: {
+                        onComplete: function () {
+                            if (!humidRectangleSet) {
+                                var scale = window.devicePixelRatio;
+
+                                var sourceCanvas = humidChart.chart.canvas;
+                                var copyWidth = humidChart.scales['y-axis-0'].width - 10;
+                                var copyHeight = humidChart.scales['y-axis-0'].height + humidChart.scales['y-axis-0'].top + 10;
+
+                                var targetCtx = document.getElementById("humidAxis").getContext("2d");
+
+                                targetCtx.scale(scale, scale);
+                                targetCtx.canvas.width = copyWidth * scale;
+                                targetCtx.canvas.height = copyHeight * scale;
+
+                                targetCtx.canvas.style.width = `${copyWidth}px`;
+                                targetCtx.canvas.style.height = '${copyHeight}px';
+                                targetCtx.drawImage(sourceCanvas, 0, 0, copyWidth * scale, copyHeight * scale, 0, 0, copyWidth * scale, copyHeight * scale);
+
+                                let sourceCtx = sourceCanvas.getContext('2d');
+
+                                // Normalize coordinate system to use css pixels.
+
+                                sourceCtx.clearRect(0, 0, copyWidth * scale, copyHeight * scale);
+                                humidRectangleSet = true;
+                            }
+                        },
+                        onProgress: function () {
+                            if (humidRectangleSet === true) {
+                                let copyWidth = humidChart.scales['y-axis-0'].width;
+                                let copyHeight = humidChart.scales['y-axis-0'].height + humidChart.scales['y-axis-0'].top + 10;
+
+                                let sourceCtx = humidChart.chart.canvas.getContext('2d');
+                                sourceCtx.clearRect(0, 0, copyWidth, copyHeight);
+                            }
+                        }
+                    }
+                }
+            });
+            adddata(5, humidChart);
+        });
+
+        $(function () {
+            var tempRectangleSet = false;
+
+            var tempChartId = $('#tempChart');
+            tempChart = new Chart(tempChartId, {
+                type: 'line',
+                maintainAspectRatio: false,
+                responsive: true,
+                data: {
+                    labels: labelsArray,
+                    datasets: [{
+                        label: "Temperature",
+                        borderColor: "rgba(226,139,0,1)"
+                    }]
+                },
+                options: {
+                    tooltips: {
+                        titleFontSize: 0,
+                        titleMarginBottom: 0,
+                        bodyFontSize: 12
+                    },
+                    scales: {
+                        xAxes: [{
+                            ticks: {
+                                fontSize: 12,
+                                display: false
+                            }
+                        }],
+                        yAxes: [{
+                            ticks: {
+                                fontSize: 12,
+                                beginAtZero: true
+                            }
+                        }]
+                    },
+                    animation: {
+                        onComplete: function () {
+                            if (!tempRectangleSet) {
+                                var scale = window.devicePixelRatio;
+
+                                let sourceCanvas = tempChart.chart.canvas;
+                                let copyWidth = tempChart.scales['y-axis-0'].width - 10;
+                                let copyHeight = tempChart.scales['y-axis-0'].height + tempChart.scales['y-axis-0'].top + 10;
+
+                                let targetCtx = document.getElementById("tempAxis").getContext("2d");
+
+                                targetCtx.scale(scale, scale);
+                                targetCtx.canvas.width = copyWidth * scale;
+                                targetCtx.canvas.height = copyHeight * scale;
+
+                                targetCtx.canvas.style.width = `${copyWidth}px`;
+                                targetCtx.canvas.style.height = '${copyHeight}px';
+                                targetCtx.drawImage(sourceCanvas, 0, 0, copyWidth * scale, copyHeight * scale, 0, 0, copyWidth * scale, copyHeight * scale);
+
+                                let sourceCtx = sourceCanvas.getContext('2d');
+
+                                // Normalize coordinate system to use css pixels.
+
+                                sourceCtx.clearRect(0, 0, copyWidth * scale, copyHeight * scale);
+                                tempRectangleSet = true;
+                            }
+                        },
+                        onProgress: function () {
+                            if (tempRectangleSet === true) {
+                                let copyWidth = tempChart.scales['y-axis-0'].width;
+                                let copyHeight = tempChart.scales['y-axis-0'].height + tempChart.scales['y-axis-0'].top + 10;
+
+                                let sourceCtx = tempChart.chart.canvas.getContext('2d');
+                                sourceCtx.clearRect(0, 0, copyWidth, copyHeight);
+                            }
+                        }
+                    }
+                }
+            });
+        });
+
+        $(function () {
+            var pressRectangleSet = false;
+
+            var pressChartId = $('#pressChart');
+            pressChart = new Chart(pressChartId, {
+                type: 'line',
+                maintainAspectRatio: false,
+                responsive: true,
+                data: {
+                    labels: labelsArray,
+                    datasets: [{
+                        label: "Pressure",
+                        borderColor: "rgba(40,233,255,1)"
+                    }]
+                },
+                options: {
+                    tooltips: {
+                        titleFontSize: 0,
+                        titleMarginBottom: 0,
+                        bodyFontSize: 12
+                    },
+                    scales: {
+                        xAxes: [{
+                            ticks: {
+                                fontSize: 12,
+                                display: false
+                            }
+                        }],
+                        yAxes: [{
+                            ticks: {
+                                fontSize: 12,
+                                beginAtZero: true
+                            }
+                        }]
+                    },
+                    animation: {
+                        onComplete: function () {
+                            if (!pressRectangleSet) {
+                                let scale = window.devicePixelRatio;
+
+                                let sourceCanvas = pressChart.chart.canvas;
+                                let copyWidth = pressChart.scales['y-axis-0'].width - 10;
+                                let copyHeight = pressChart.scales['y-axis-0'].height + pressChart.scales['y-axis-0'].top + 10;
+
+                                let targetCtx = document.getElementById("pressAxis").getContext("2d");
+
+                                targetCtx.scale(scale, scale);
+                                targetCtx.canvas.width = copyWidth * scale;
+                                targetCtx.canvas.height = copyHeight * scale;
+
+                                targetCtx.canvas.style.width = `${copyWidth}px`;
+                                targetCtx.canvas.style.height = '${copyHeight}px';
+                                targetCtx.drawImage(sourceCanvas, 0, 0, copyWidth * scale, copyHeight * scale, 0, 0, copyWidth * scale, copyHeight * scale);
+
+                                let sourceCtx = sourceCanvas.getContext('2d');
+
+                                // Normalize coordinate system to use css pixels.
+
+                                sourceCtx.clearRect(0, 0, copyWidth * scale, copyHeight * scale);
+                                pressRectangleSet = true;
+                            }
+                        },
+                        onProgress: function () {
+                            if (pressRectangleSet === true) {
+                                let copyWidth = pressChart.scales['y-axis-0'].width;
+                                let copyHeight = pressChart.scales['y-axis-0'].height + pressChart.scales['y-axis-0'].top + 10;
+
+                                let sourceCtx = pressChart.chart.canvas.getContext('2d');
+                                sourceCtx.clearRect(0, 0, copyWidth, copyHeight);
+                            }
+                        }
+                    }
+                }
+
+            });
+        });
+
+        $(function () {
+            var altitudeRectangleSet = false;
+
+            var altitudeChartId = $('#altitudeChart');
+            altitudeChart = new Chart(altitudeChartId, {
+                type: 'line',
+                maintainAspectRatio: false,
+                responsive: true,
+                data: {
+                    labels: labelsArray,
+                    datasets: [{
+                        label: "Altitude",
+                        borderColor: "rgba(0,0,0,1)"
+                    }]
+                },
+                options: {
+                    tooltips: {
+                        titleFontSize: 0,
+                        titleMarginBottom: 0,
+                        bodyFontSize: 12
+                    },
+                    scales: {
+                        xAxes: [{
+                            ticks: {
+                                fontSize: 12,
+                                display: false
+                            }
+                        }],
+                        yAxes: [{
+                            ticks: {
+                                fontSize: 12,
+                                beginAtZero: true
+                            }
+                        }]
+                    },
+                    animation: {
+                        onComplete: function () {
+                            if (!altitudeRectangleSet) {
+                                let scale = window.devicePixelRatio;
+
+                                let sourceCanvas = altitudeChart.chart.canvas;
+                                let copyWidth = altitudeChart.scales['y-axis-0'].width - 10;
+                                let copyHeight = altitudeChart.scales['y-axis-0'].height + altitudeChart.scales['y-axis-0'].top + 10;
+
+                                let targetCtx = document.getElementById("altitudeAxis").getContext("2d");
+
+                                targetCtx.scale(scale, scale);
+                                targetCtx.canvas.width = copyWidth * scale;
+                                targetCtx.canvas.height = copyHeight * scale;
+
+                                targetCtx.canvas.style.width = `${copyWidth}px`;
+                                targetCtx.canvas.style.height = '${copyHeight}px';
+                                targetCtx.drawImage(sourceCanvas, 0, 0, copyWidth * scale, copyHeight * scale, 0, 0, copyWidth * scale, copyHeight * scale);
+
+                                let sourceCtx = sourceCanvas.getContext('2d');
+
+                                // Normalize coordinate system to use css pixels.
+
+                                sourceCtx.clearRect(0, 0, copyWidth * scale, copyHeight * scale);
+                                altitudeRectangleSet = true;
+                            }
+                        },
+                        onProgress: function () {
+                            if (altitudeRectangleSet === true) {
+                                let copyWidth = altitudeChart.scales['y-axis-0'].width;
+                                let copyHeight = altitudeChart.scales['y-axis-0'].height + altitudeChart.scales['y-axis-0'].top + 10;
+
+                                let sourceCtx = altitudeChart.chart.canvas.getContext('2d');
+                                sourceCtx.clearRect(0, 0, copyWidth, copyHeight);
+                            }
+                        }
+                    }
+                }
+
+            });
+        });
+
+
+
+
+        var websock;
+
+        function addData(data, chart) {
+            chart.data.datasets[0].data.push(data);
+        }
+        function initWebsocket() {
+            websock = new WebSocket('ws://' + window.location.hostname + ':82/');
+            websock.onopen = function (evt) { console.log('websock open'); };
+            websock.onclose = function (evt) { console.log('websock close'); };
+            websock.onerror = function (evt) { console.log(evt); };
+
+            websock.onmessage = function (evt) {
+                console.log(evt);
+                var data = evt.data.trim().split(",");
+                console.log(data);
+
+                var date = new Date();
+                if (data.length > 5) {
+                    date = new Date(date.getTime() - (parseInt(data[5]) - parseInt(data[0])) * 30000);
+                }
+                var lab = "";
+                lab += date.getFullYear();
+                lab += ".";
+                lab += date.getMonth() + 1;
+                lab += ".";
+                lab += date.getDate();
+                lab += " ";
+                lab += date.getHours();
+                lab += ":";
+                lab += date.getMinutes();
+                lab += ":";
+                lab += date.getSeconds();
+
+                labelsArray.push(lab);
+
+                addData(data[1], humidChart);
+                addData(data[2], tempChart);
+                addData(data[3], pressChart);
+                addData(data[4], altitudeChart);
+
+                humidChart.update();
+                tempChart.update();
+                pressChart.update();
+                altitudeChart.update();
+            };
+        }
+        initWebsocket();
+    });
+</script>
+
+</html>

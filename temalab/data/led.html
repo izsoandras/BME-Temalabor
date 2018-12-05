@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<body onload="onStart()">
+	<p id="txtLedStatus"></p>
+	<button id="H" onclick="onButtonClick(this)">Turn On</button>
+	<button id="L" onclick="onButtonClick(this)">Turn Off</button>
+</body>
+<script>
+	var websock;
+	
+	function onStart(){
+		websock = new WebSocket('ws://' + window.location.hostname + ':81/');
+		websock.onopen = function(evt) { console.log('websock open'); };
+		websock.onclose = function(evt) { console.log('websock close'); };
+		websock.onerror = function(evt) { console.log(evt); };
+		
+		websock.onmessage = function(evt) {
+			console.log(evt);
+			var text = document.getElementById("txtLedStatus");
+			if (evt.data === 'H') {
+			text.innerHTML = "On";
+			text.style.color = "blue";
+			}
+			else if (evt.data === 'L') {
+			text.innerHTML = "Off";
+			text.style.color = 'gray';
+			}
+			else {
+			console.log('unknown event');
+			}
+		};
+	}
+	
+	function onButtonClick(btn){
+		websock.send(btn.id);
+	}
+</script>
+</html>

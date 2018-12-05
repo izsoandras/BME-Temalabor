@@ -1,0 +1,13 @@
+<form method="post" enctype="multipart/form-data">
+		<input type="file" name="name">
+		<input class="button" type="submit" value="Upload">
+	</form>
+	<input type="text" name="delName">
+	<button onclick="sendDelete()">Delete</button>
+	<script>
+		function sendDelete(){
+			var xhr = new XMLHttpRequest();
+			xhr.open('DELETE', "http://esp8266.local/edit", true);
+			xhr.send(document.getElementsByName("delName")[0].value);
+		}
+	</script>
