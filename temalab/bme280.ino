@@ -89,10 +89,19 @@ void sensorSocketEventHandler(uint8_t num, WStype_t type, uint8_t * payload, siz
         }
       }
       break;
+	/*A tetszõleges tartomány lekérdezése
+	*/
     case WStype_TEXT:
-      int from = nextVal(&payload, &lenght);
-      int count = nextVal(&payload, &lenght);
-      int step = nextVal(&payload, &lenght);
+		//WebSocket hibás, ha az õ adatait módosítjük => másolás
+		size_t lengthCopy = lenght;
+		uint8_t* payloadCopy = (uint8_t*)malloc(sizeof(uint8_t)*lengthCopy);
+		
+		for (int i = 0; i < lengthCopy; i++)
+			payloadCopy[i] = payload[i];
+		//Kapott üzenet feldolgozása
+		int from = nextVal(&payloadCopy, &lengthCopy);
+		int count = nextVal(&payloadCopy, &lengthCopy);
+		int step = nextVal(&payloadCopy, &lengthCopy);
 
     Serial.print("Read request from ");
     Serial.print(from);
@@ -104,25 +113,30 @@ void sensorSocketEventHandler(uint8_t num, WStype_t type, uint8_t * payload, siz
 
       if (SPIFFS.exists("/measurements.csv")) {
         File f = SPIFFS.open("/measurements.csv", "r");
-        int row = 0;
         String s = f.readStringUntil(',');
+        int row = s.toInt();
+		//Eltekerünk addig, ahonnan kérték az adatokat
         while (row < from) {
           f.readStringUntil('\n');
-          if ((s = f.readStringUntil(',')) == 0) {
+          if ((s = f.readStringUntil(',')).length() == 0) {
             return;
           }
           row = s.toInt();
         }
-
-        while (row < from + count) {
-          if ((row - from) % step == 0) {
+		//a kért értékeket átküldjük
+        while (row < from + count*step) {
             s += ",";
             s += f.readStringUntil('\n');
+			s += ",";
+			s += timestamp;
             sensorSendString(num, s);
-          } else {
-            f.readStringUntil('\n');
-          }
-          if ((s = f.readStringUntil(',')) == 0) {
+			
+			//átugorjuk azokat, amik nem érdekesek most
+			for (int i = 0; i < step - 1; i++)
+				if (f.readStringUntil('\n').length() == 0)
+					return;
+
+          if ((s = f.readStringUntil(',')).length() == 0) {
             return;
           }
           row = s.toInt();
@@ -133,35 +147,31 @@ void sensorSocketEventHandler(uint8_t num, WStype_t type, uint8_t * payload, siz
       break;
   }
 }
-
+//a sensorWebSocket-en elküldi a paraméterben átadott számú kliensnek a Stringet
 void sensorSendString(int num, String s) {
   s += "0";
   char buff[s.length()];
   s.toCharArray(buff, sizeof(buff));
   sensorSocket.sendTXT(num, buff, sizeof(buff) - 1);
+
+  Serial.print("Sent: ");
+  Serial.println(s);
 }
 
 int nextVal(uint8_t** string, size_t* lenght) {
-  Serial.print("Calculating next val for: ");
-  for (int i = 0; i < *lenght; i++)
-    Serial.print((char)(*string)[i]);
-  Serial.println();
+	//',' megkeresése
   int newLength = 0;
   while ((*string)[newLength] != ',' && newLength < *lenght)
     newLength++;
   newLength += 1;
 
+  //új tömbbe másolni az elejét + '\0'-t
   char ret[newLength];
   for (int j = 0; j < newLength - 1; j++)
     ret[j] = (*string)[j];
   ret[newLength - 1] = '\0';
 
-  Serial.print("The next val is: ");
-  for (int i = 0; i < newLength; i++)
-    Serial.print(ret[i]);
-  Serial.println();
-
-  
+  //a kapott tömböt az elsõ értéket kivéve másoljuk, ha már nincs több érték akkor felszabadítjuk
   if (*lenght > 1) {
     *lenght = *lenght - newLength;
     uint8_t* newString = (uint8_t*) malloc(sizeof(uint8_t) * (*lenght));
@@ -170,26 +180,16 @@ int nextVal(uint8_t** string, size_t* lenght) {
     }
     free(*string);
     *string = newString;
-
-    Serial.print("The new string is: ");
-    for (int i = 0; i < *lenght; i++)
-      Serial.print((char)(*string)[i]);
-    Serial.println();
-
-
   } else {
     free(*string);
   }
-
+  //visszatérési érték elõállítása
   String retStr(ret);
-  Serial.println(retStr);
   int retInt = retStr.toInt();
-  Serial.print("The return int is: ");
-  Serial.println(retInt);
   return retInt;
 }
-
+//float char* tömbbé konvertálása
 void ftosprint(char* buff, float f) {
-  sprintf(buff, "%s%d.%d", (f > 0) ? "" : "-", (int) (abs(f)), ((int) (fabs(f) * 100)) % 100);
+  sprintf(buff, "%s%d.%02d", (f > 0) ? "" : "-", (int) (abs(f)), ((int) (fabs(f) * 100)) % 100);
 }
 

@@ -70,7 +70,7 @@ void setup() {
 }
 
 void loop() {
-  /*currMillis = millis();
+  currMillis = millis();
   if (currMillis - prevMillis > periodMillis) {
     logData();
     prevMillis = currMillis;
@@ -78,7 +78,7 @@ void loop() {
   if(currMillis - prevWifiMillis > wifiPeriodMillis){
     scanWifi();
     prevWifiMillis = currMillis;
-  }*/
+  }
   ArduinoOTA.handle();
   server.handleClient();
   webSocket.loop();
